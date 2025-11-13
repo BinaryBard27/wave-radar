@@ -1,0 +1,164 @@
+╔══════════════════════════════════════════════════════════════╗
+║           WaveRadar - How to Run (Step-by-Step)              ║
+╚══════════════════════════════════════════════════════════════╝
+
+📋 METHOD 1: USING BATCH FILES (RECOMMENDED)
+═══════════════════════════════════════════════════════════════
+
+Step 1: Start Backend Server
+─────────────────────────────
+   → Double-click: start_backend.bat
+   → Wait for: "Starting API server on http://127.0.0.1:8000"
+   → KEEP THIS WINDOW OPEN!
+
+Step 2: Start Frontend Server
+──────────────────────────────
+   → Open a NEW terminal window
+   → Double-click: start_frontend.bat
+   → Wait for: "Serving HTTP on :: port 8081"
+   → KEEP THIS WINDOW OPEN!
+
+Step 3: Open in Browser
+────────────────────────
+   → Open your browser (Chrome, Edge, Firefox)
+   → Navigate to: http://127.0.0.1:8081
+   → You should see the WaveRadar dashboard!
+
+
+📋 METHOD 2: MANUAL COMMANDS
+═══════════════════════════════════════════════════════════════
+
+TERMINAL 1 - Backend API Server:
+─────────────────────────────────
+   cd waveradarapi
+   python -m venv venv
+   venv\Scripts\activate
+   pip install -r requirements.txt
+   python main.py
+
+   ✅ Success: "Uvicorn running on http://127.0.0.1:8000"
+   ⚠️  KEEP THIS TERMINAL OPEN!
+
+
+TERMINAL 2 - Frontend Server:
+──────────────────────────────
+   cd C:\Users\SHERWIN\OneDrive\Documents\Desktop\SAR
+   python -m http.server 8081
+
+   ✅ Success: "Serving HTTP on :: port 8081"
+   ⚠️  KEEP THIS TERMINAL OPEN!
+
+
+Browser:
+────────
+   → Open: http://127.0.0.1:8081
+   → You should see the WaveRadar dashboard!
+
+
+🧪 TESTING
+═══════════════════════════════════════════════════════════════
+
+Test Backend (in browser):
+──────────────────────────
+   ✓ http://127.0.0.1:8000
+     → Should show API info
+
+   ✓ http://127.0.0.1:8000/api/dashboard/keystats
+     → Should show JSON with statistics
+
+   ✓ http://127.0.0.1:8000/api/reports/aiinsights
+     → Should show JSON with AI insights
+
+
+Test Frontend:
+──────────────
+   ✓ http://127.0.0.1:8081
+     → Dashboard page with statistics
+
+   ✓ http://127.0.0.1:8081/reports.html
+     → Reports page with AI insights
+
+   ✓ http://127.0.0.1:8081/analytics.html
+     → Analytics page with chart
+
+
+🐛 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════
+
+Problem: "Python is not recognized"
+Solution: Install Python 3.8+ from python.org
+
+
+Problem: "Port 8000 is already in use"
+Solution 1: Close the program using port 8000
+Solution 2: Change port in waveradarapi/main.py and script.js
+
+
+Problem: Dashboard shows "0" values
+Solution: 
+   1. Check backend server is running (Terminal 1)
+   2. Open browser console (F12) - check for errors
+   3. Test API: http://127.0.0.1:8000/api/dashboard/keystats
+
+
+Problem: Images not displaying
+Solution:
+   1. Add images to waveradarapi/results/
+      - feature_importance.png (analytics chart)
+      - placeholder_map.png (dashboard map)
+   2. Restart backend server
+
+
+Problem: CORS errors
+Solution: Backend already configured for CORS
+          Verify backend server is running
+
+
+📁 FILE STRUCTURE
+═══════════════════════════════════════════════════════════════
+
+SAR/
+├── start_backend.bat      ← Double-click to start backend
+├── start_frontend.bat     ← Double-click to start frontend
+├── index.html             ← Dashboard page
+├── reports.html           ← Reports page
+├── analytics.html         ← Analytics page
+├── script.js              ← Frontend JavaScript
+├── waveradarapi/
+│   ├── main.py            ← FastAPI server
+│   ├── requirements.txt   ← Python dependencies
+│   └── results/           ← Add your images here
+│       ├── feature_importance.png
+│       └── placeholder_map.png
+
+
+✅ SUCCESS CHECKLIST
+═══════════════════════════════════════════════════════════════
+
+[ ] Backend server running on port 8000
+[ ] Frontend server running on port 8081
+[ ] Browser opens http://127.0.0.1:8081
+[ ] Dashboard shows statistics (2,847 sq km, etc.)
+[ ] No errors in browser console (F12)
+[ ] Images added to waveradarapi/results/ (optional)
+
+
+📚 DOCUMENTATION
+═══════════════════════════════════════════════════════════════
+
+For more details, see:
+  → HOW_TO_RUN.md (detailed instructions)
+  → QUICK_START.md (quick reference)
+  → SETUP.md (full setup guide)
+  → waveradarapi/README.md (API documentation)
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                    Need Help?                                ║
+║  Check browser console (F12) for errors                     ║
+║  Verify both servers are running                            ║
+║  Test API endpoints directly in browser                     ║
+╚══════════════════════════════════════════════════════════════╝
+
+
+

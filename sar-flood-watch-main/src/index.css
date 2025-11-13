@@ -1,0 +1,173 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* SAR Flood Mapping Theme - Professional Dark */
+    --background: 225 45% 8%; /* #0A0F2C */
+    --foreground: 0 0% 100%; /* #FFFFFF */
+
+    --card: 225 40% 12%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 225 40% 10%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 185 100% 50%; /* #00EFFF */
+    --primary-foreground: 225 45% 8%;
+
+    --secondary: 225 30% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 225 25% 20%;
+    --muted-foreground: 0 0% 69%; /* #B0B0B0 */
+
+    --accent: 185 100% 50%;
+    --accent-foreground: 225 45% 8%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 225 30% 18%;
+    --input: 225 30% 18%;
+    --ring: 185 100% 50%;
+
+    /* Custom SAR theme tokens */
+    --space-gradient: linear-gradient(135deg, hsl(225, 45%, 8%), hsl(0, 0%, 0%));
+    --earth-glow: 185 100% 50%;
+    --radar-pulse: 185 80% 60%;
+    --data-highlight: 185 90% 70%;
+    --warning-flood: 30 100% 50%;
+    --critical-flood: 0 100% 50%;
+    
+    /* Effects */
+    --glow-primary: 0 0 30px hsl(var(--primary) / 0.5);
+    --glow-intense: 0 0 50px hsl(var(--primary) / 0.8);
+    --shadow-depth: 0 10px 40px -10px hsl(0 0% 0% / 0.7);
+    
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .glow-primary {
+    box-shadow: var(--glow-primary);
+  }
+  
+  .glow-intense {
+    box-shadow: var(--glow-intense);
+  }
+  
+  .shadow-depth {
+    box-shadow: var(--shadow-depth);
+  }
+  
+  .bg-space-gradient {
+    background: var(--space-gradient);
+  }
+  
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+@layer utilities {
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+  
+  .animate-radar-sweep {
+    animation: radar-sweep 3s linear infinite;
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px hsl(var(--primary) / 0.8);
+    }
+  }
+  
+  @keyframes radar-sweep {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+}

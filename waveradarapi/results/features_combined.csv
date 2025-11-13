@@ -1,0 +1,3 @@
+region,period,days,total_rainfall_mm,avg_daily_rainfall_mm,max_daily_rainfall_mm,heavy_rain_days,avg_temperature_c,sar_flood_pct
+Assam,flood,184,6487.71,35.26,232.96,48,24.79,0.01
+Mumbai,flood,184,12278.04,66.73,338.12,87,27.29,0.48

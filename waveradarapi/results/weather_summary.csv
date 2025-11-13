@@ -1,0 +1,6 @@
+region,period,days,total_rainfall_mm,avg_daily_rainfall_mm,max_daily_rainfall_mm,heavy_rain_days,avg_temperature_c,avg_temp,total_rainfall,max_daily_rainfall,avg_wind_speed,days_heavy_rain
+Assam,pre_flood,181.0,2712.78,14.99,138.93,9.0,22.93,,,,,
+Assam,flood,184.0,6487.71,35.26,232.96,48.0,24.79,,,,,
+Mumbai,pre_flood,181.0,2732.74,15.1,240.64,20.0,28.81,,,,,
+Mumbai,flood,184.0,12278.04,66.73,338.12,87.0,27.29,,,,,
+Bihar,flood,,,,,,,26.975492477614615,729.1261912254046,64.59402317108001,1.8753205039177228,1.0

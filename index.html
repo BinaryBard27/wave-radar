@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaveRadar - Real-time Flood Monitoring</title>
+    
+    <!-- Configuration -->
+    <script src="config.js"></script>
+    
+    <!-- Three.js for 3D Globe -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Leaflet as fallback -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Google Maps API (loaded dynamically if API key is configured) -->
+    <script>
+        // Load Google Maps API if key is configured and enabled
+        if (window.CONFIG && window.CONFIG.USE_GOOGLE_MAPS && window.CONFIG.GOOGLE_MAPS_API_KEY && window.CONFIG.GOOGLE_MAPS_API_KEY !== 'YOUR_API_KEY_HERE') {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${window.CONFIG.GOOGLE_MAPS_API_KEY}&libraries=drawing,geometry&callback=initGoogleMaps`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+            
+            window.initGoogleMaps = function() {
+                console.log('✅ Google Maps API loaded');
+            };
+        } else {
+            console.log('ℹ️  Google Maps API not configured, using Leaflet fallback');
+            // Google Maps will use Leaflet fallback
+        }
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background Waves */
+        .wave-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+            overflow: hidden;
+        }
+
+        .wave-bg::before, .wave-bg::after {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+            animation: wave 20s ease-in-out infinite;
+        }
+
+        .wave-bg::before {
+            top: -50%;
+            left: -50%;
+            animation-delay: -10s;
+        }
+
+        .wave-bg::after {
+            bottom: -50%;
+            right: -50%;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+            animation-delay: -5s;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(90deg) scale(1.1); }
+            50% { transform: rotate(180deg) scale(1); }
+            75% { transform: rotate(270deg) scale(1.1); }
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-menu a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-menu a:hover {
+            color: #3b82f6;
+        }
+
+        .nav-menu a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(135deg, #3b82f6, #10b981);
+            transition: width 0.3s ease;
+        }
+
+        .nav-menu a:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            position: relative;
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 0%, #a855f7 50%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-content p {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(59, 130, 246, 0.4);
+        }
+
+        /* 3D Globe Container */
+        .globe-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            margin: 0 auto;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 
+                0 20px 60px rgba(59, 130, 246, 0.4),
+                inset 0 0 100px rgba(59, 130, 246, 0.2);
+        }
+
+        #globe3d-container {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: transparent;
+        }
+
+        .globe::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: 
+                radial-gradient(circle at 20% 20%, transparent 30%, rgba(255, 255, 255, 0.1) 31%, transparent 32%),
+                radial-gradient(circle at 60% 40%, transparent 20%, rgba(255, 255, 255, 0.08) 21%, transparent 22%),
+                radial-gradient(circle at 80% 70%, transparent 25%, rgba(255, 255, 255, 0.06) 26%, transparent 27%);
+        }
+
+        .globe::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            width: calc(100% + 10px);
+            height: calc(100% + 10px);
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+            animation: rotate 30s linear infinite reverse;
+            z-index: -1;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .features-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .features h2 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, #ffffff 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(59, 130, 246, 0.2);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #ffffff;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer {
+            padding: 4rem 2rem 2rem;
+            position: relative;
+            background: rgba(0, 0, 0, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 3rem;
+        }
+
+        .footer-section h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #3b82f6;
+        }
+
+        .footer-section p, .footer-section a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            line-height: 1.8;
+        }
+
+        .footer-section a:hover {
+            color: #3b82f6;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+
+            .hero-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .globe-container {
+                width: 300px;
+                height: 300px;
+            }
+
+            .features h2 {
+                font-size: 2rem;
+            }
+
+            .footer-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+        }
+
+        /* Scroll Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Improved animations */
+        .statcard {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .statcard:nth-child(1) { animation-delay: 0.1s; }
+        .statcard:nth-child(2) { animation-delay: 0.2s; }
+        .statcard:nth-child(3) { animation-delay: 0.3s; }
+        .statcard:nth-child(4) { animation-delay: 0.4s; }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        /* ============================================
+           Dashboard Stats Styling
+           ============================================ */
+        .statsgrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .statcard {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .statcard:hover {
+            transform: translateY(-5px);
+        }
+
+        .staticon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .statcard h3 {
+            font-size: 0.9em;
+            font-weight: 500;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .statvalue {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .statvalue .unit {
+            font-size: 0.4em;
+            opacity: 0.8;
+            margin-left: 5px;
+        }
+
+        .statchange {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        /* ============================================
+           Map Container Styling
+           ============================================ */
+        .mapcontainer {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #earth-engine-map {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            min-height: 600px;
+        }
+
+        .responsivemap {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+        }
+
+        /* Dashboard Stats Section */
+        .dashboardstats {
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .dashboardstats-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .dashboardstats h2 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #ffffff 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .dashboardmap {
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .dashboardmap-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .dashboardmap h2 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+        
+        .dashboardmap p {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        /* Loading and Error States */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
+            font-style: italic;
+        }
+
+        .error {
+            background: rgba(248, 215, 218, 0.2);
+            color: #ff6b6b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid rgba(248, 215, 218, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="wave-bg"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">waveradar</div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Dashboard</a></li>
+                <li><a href="reports.html">Reports</a></li>
+                <li><a href="analytics.html">Analytics</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1>Flood Mapping with SAR</h1>
+                <p>Real-time monitoring and visualization of flood-prone areas using satellite SAR data and AI-powered detection systems for emergency response and disaster management.</p>
+                <a href="#features" class="cta-button">Explore Features</a>
+            </div>
+            <div class="globe-container">
+                <div id="globe3d-container" style="width: 100%; height: 100%; border-radius: 50%;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Statistics Section -->
+    <section class="dashboardstats">
+        <div class="dashboardstats-container">
+            <h2>Real-Time Overview</h2>
+
+            <div class="statsgrid">
+                <!-- Stat Card 1: Flooded Area -->
+                <div class="statcard">
+                    <div class="staticon">🌊</div>
+                    <h3>Flooded Area</h3>
+                    <div class="statvalue">
+                        <span id="floodedareavalue">0</span>
+                        <span class="unit">sq km</span>
+                    </div>
+                    <div class="statchange">
+                        <span id="floodedareachange">+0%</span>
+                        <span id="floodedareatrend"></span>
+                    </div>
+                </div>
+
+                <!-- Stat Card 2: Population -->
+                <div class="statcard">
+                    <div class="staticon">👥</div>
+                    <h3>Population Impacted</h3>
+                    <div class="statvalue">
+                        <span id="populationimpactedvalue">0</span>
+                        <span class="unit">people</span>
+                    </div>
+                    <div class="statchange">
+                        <span id="populationimpactedchange">+0%</span>
+                        <span id="populationimpactedtrend"></span>
+                    </div>
+                </div>
+
+                <!-- Stat Card 3: Villages -->
+                <div class="statcard">
+                    <div class="staticon">🏘️</div>
+                    <h3>Affected Villages</h3>
+                    <div class="statvalue">
+                        <span id="affectedvillagesvalue">0</span>
+                        <span class="unit">locations</span>
+                    </div>
+                    <div class="statchange">
+                        <span id="affectedvillageschange">+0%</span>
+                        <span id="affectedvillagestrend"></span>
+                    </div>
+                </div>
+
+                <!-- Stat Card 4: Rainfall -->
+                <div class="statcard">
+                    <div class="staticon">🌧️</div>
+                    <h3>Rainfall (24h)</h3>
+                    <div class="statvalue">
+                        <span id="rainfallvalue">0</span>
+                        <span class="unit">mm</span>
+                    </div>
+                    <div class="statchange">
+                        <span id="rainfallchange">+0%</span>
+                        <span id="rainfalltrend"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dashboardstatserror"></div>
+        </div>
+    </section>
+
+    <!-- Dashboard Map Section -->
+    <section class="dashboardmap">
+        <div class="dashboardmap-container">
+            <h2>Interactive Flood Analysis Map</h2>
+            <p>Real-time flood monitoring with interactive 3D map visualization</p>
+            <div class="mapcontainer" style="height: 600px; position: relative;">
+                <div id="earth-engine-map" style="width: 100%; height: 100%; border-radius: 8px;"></div>
+                <div id="map-loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 1.2rem; z-index: 1000; background: rgba(0, 0, 0, 0.5); padding: 20px; border-radius: 8px;">
+                    <div style="text-align: center;">
+                        <div style="width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
+                        Loading map...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="features-container">
+            <h2>Advanced Flood Detection Technology</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">📡</span>
+                    <h3>SAR Data Bands</h3>
+                    <p>Utilizes Sentinel-1 SAR Bands (VV, VH, Angle) for all-weather flood detection, providing reliable data even through cloud cover and during night time.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🤖</span>
+                    <h3>AI Flood Detection</h3>
+                    <p>Deep Learning models powered by convolutional neural networks highlight flooded regions in near real-time with 95% accuracy rates.</p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🗺️</span>
+                    <h3>Interactive Maps</h3>
+                    <p>Visualize floods with dynamic overlays of rainfall data, digital elevation models, and comprehensive river network mappings.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h4>FloodMapSAR</h4>
+                <p>Revolutionizing flood monitoring with cutting-edge satellite technology and artificial intelligence for global disaster preparedness.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul class="footer-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#case-studies">Case Studies</a></li>
+                    <li><a href="#about">About Us</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Contact Info</h4>
+                <p>Email: info@floodmapsar.org</p>
+                <p>Phone: +1 (555) 123-4567</p>
+                <p>Location: Remote Sensing Center</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 FloodMapSAR. All rights reserved. | Powered by Satellite Technology</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Navbar background opacity on scroll
+        window.addEventListener('scroll', function() {
+            const nav = document.querySelector('nav');
+            const scrolled = window.pageYOffset;
+            const rate = scrolled * -0.5;
+            
+            if (scrolled > 50) {
+                nav.style.background = 'rgba(0, 0, 0, 0.95)';
+            } else {
+                nav.style.background = 'rgba(0, 0, 0, 0.8)';
+            }
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('fade-in-up');
+                }
+            });
+        }, observerOptions);
+
+        // Observe elements for animation
+        document.querySelectorAll('.feature-card').forEach(card => {
+            observer.observe(card);
+        });
+
+        // Add floating animation to feature cards
+        document.querySelectorAll('.feature-card').forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.2}s`;
+        });
+
+        // Globe interaction (click to pulse effect)
+        document.querySelector('.globe').addEventListener('click', function() {
+            this.style.animation = 'none';
+            this.offsetHeight; // Trigger reflow
+            this.style.animation = 'rotate 20s linear infinite, pulse 0.5s ease-out';
+        });
+
+        // Add pulse animation
+        const pulseKeyframes = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+        `;
+        const style = document.createElement('style');
+        style.textContent = pulseKeyframes;
+        document.head.appendChild(style);
+    </script>
+    <!-- Load JavaScript files -->
+    <script src="config.js"></script>
+    <script src="globe.js"></script>
+    <script src="map-engine.js"></script>
+    <script src="script.js"></script>
+    
+    <script>
+        // Initialize components after page load
+        window.addEventListener('load', () => {
+            // Hide map loading message after map initializes
+            const checkMap = setInterval(() => {
+                const map = window.earthEngineMap;
+                const loading = document.getElementById('map-loading');
+                if (map && map.map && loading) {
+                    loading.style.display = 'none';
+                    clearInterval(checkMap);
+                }
+            }, 500);
+            
+            // Timeout after 5 seconds
+            setTimeout(() => {
+                clearInterval(checkMap);
+                const loading = document.getElementById('map-loading');
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
